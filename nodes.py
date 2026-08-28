@@ -2459,6 +2459,7 @@ async def init_builtin_extra_nodes():
         "nodes_multigpu.py",
         "nodes_load_3d.py",
         "nodes_cosmos.py",
+        "nodes_cosmos3.py",
         "nodes_video.py",
         "nodes_lumina2.py",
         "nodes_wan.py",

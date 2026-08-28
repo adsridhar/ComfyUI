@@ -1170,6 +1170,22 @@ class CosmosI2VPredict2(CosmosT2IPredict2):
         out = model_base.CosmosPredict2(self, image_to_video=True, device=device)
         return out
 
+class Cosmos3(supported_models_base.BASE):
+    unet_config = {
+        "image_model": "cosmos3",
+    }
+    unet_extra_config = {}
+
+    latent_format = latent_formats.Wan22
+    supported_inference_dtypes = [torch.bfloat16, torch.float32]
+
+    def __init__(self, unet_config):
+        super().__init__(unet_config)
+        self.unet_config.pop("image_model")
+
+    def get_model(self, state_dict, prefix="", device=None):
+        return model_base.Cosmos3(self, device=device)
+
 class Lumina2(supported_models_base.BASE):
     unet_config = {
         "image_model": "lumina2",
@@ -2485,6 +2501,7 @@ models = [
     CosmosI2V,
     CosmosT2IPredict2,
     CosmosI2VPredict2,
+    Cosmos3,
     ZImagePixelSpace,
     ZImage,
     PiD,

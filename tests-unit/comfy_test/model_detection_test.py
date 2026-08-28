@@ -1,4 +1,5 @@
 from collections import defaultdict
+import json
 
 import torch
 
@@ -125,6 +126,15 @@ def _make_joyimage_edit_plus_sd():
 
 def _add_model_diffusion_prefix(sd):
     return {f"model.diffusion_model.{k}": v for k, v in sd.items()}
+
+
+def _make_cosmos3_sd():
+    return {
+        "embed_tokens.weight": torch.empty(1, device="meta"),
+        "layers.0.self_attn.add_q_proj.weight": torch.empty(1, device="meta"),
+        "proj_in.weight": torch.empty(1, device="meta"),
+        "proj_out.weight": torch.empty(1, device="meta"),
+    }
 
 
 class TestModelDetection:
@@ -288,6 +298,28 @@ class TestModelDetection:
         sd = _make_joyimage_edit_plus_sd()
         del sd["double_blocks.0.attn.img_attn_q_norm.weight"]
         assert detect_unet_config(sd, "") is None
+
+    def test_cosmos3_detection_uses_checkpoint_metadata(self):
+        metadata = {
+            "comfy.model_family": "cosmos3",
+            "comfy.cosmos3_config": json.dumps({"hidden_size": 4096, "latent_channel": 48}),
+        }
+
+        assert detect_unet_config(_make_cosmos3_sd(), "", metadata) == {
+            "image_model": "cosmos3",
+            "hidden_size": 4096,
+            "latent_channel": 48,
+        }
+
+    def test_incomplete_cosmos3_signature_is_not_detected(self):
+        sd = _make_cosmos3_sd()
+        del sd["proj_out.weight"]
+        metadata = {
+            "comfy.model_family": "cosmos3",
+            "comfy.cosmos3_config": "{}",
+        }
+
+        assert detect_unet_config(sd, "", metadata) is None
 
     def test_unet_config_and_required_keys_combination_is_unique(self):
         """Each model in the registry must have a unique combination of

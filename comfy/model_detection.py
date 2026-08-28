@@ -51,6 +51,51 @@ def detect_unet_config(state_dict, key_prefix, metadata=None):
     ):
         return {"audio_model": "minimax_music3"}
 
+    if metadata is not None and metadata.get("comfy.model_family") == "cosmos3":
+        required_keys = (
+            '{}embed_tokens.weight'.format(key_prefix),
+            '{}layers.0.self_attn.add_q_proj.weight'.format(key_prefix),
+            '{}proj_in.weight'.format(key_prefix),
+            '{}proj_out.weight'.format(key_prefix),
+        )
+        if not all(key in state_dict_keys for key in required_keys):
+            return None
+
+        config = json.loads(metadata["comfy.cosmos3_config"])
+        model_keys = {
+            "attention_bias",
+            "attention_dropout",
+            "head_dim",
+            "hidden_size",
+            "intermediate_size",
+            "base_fps",
+            "enable_fps_modulation",
+            "latent_channel",
+            "unified_3d_mrope_reset_spatial_ids",
+            "unified_3d_mrope_temporal_modality_margin",
+            "latent_patch_size",
+            "num_attention_heads",
+            "num_hidden_layers",
+            "num_key_value_heads",
+            "patch_latent_dim",
+            "rms_norm_eps",
+            "rope_scaling",
+            "rope_theta",
+            "action_dim",
+            "action_gen",
+            "num_embodiment_domains",
+            "sound_dim",
+            "sound_gen",
+            "sound_latent_fps",
+            "timestep_scale",
+            "vocab_size",
+            "hidden_act",
+            "qk_norm_for_text",
+            "use_und_k_norm_for_gen",
+            "rope_axes_dim",
+        }
+        return {"image_model": "cosmos3", **{key: config[key] for key in model_keys if key in config}}
+
     if '{}joint_blocks.0.context_block.attn.qkv.weight'.format(key_prefix) in state_dict_keys: #mmdit model
         unet_config = {}
         unet_config["in_channels"] = state_dict['{}x_embedder.proj.weight'.format(key_prefix)].shape[1]

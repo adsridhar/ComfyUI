@@ -44,6 +44,7 @@ import comfy.ldm.lightricks.model
 import comfy.ldm.hunyuan_video.model
 import comfy.ldm.cosmos.model
 import comfy.ldm.cosmos.predict2
+import comfy.ldm.cosmos3.model
 import comfy.ldm.lumina.model
 import comfy.ldm.wan.model
 import comfy.ldm.wan.model_animate
@@ -1473,6 +1474,27 @@ class CosmosPredict2(BaseModel):
         latent_image = self.model_sampling.calculate_input(torch.tensor([sigma_noise_augmentation], device=latent_image.device, dtype=latent_image.dtype), latent_image)
         sigma = (sigma / (sigma + 1))
         return latent_image / (1.0 - sigma)
+
+class Cosmos3(BaseModel):
+    def __init__(self, model_config, device=None):
+        super().__init__(model_config, ModelType.FLOW, device=device, unet_model=comfy.ldm.cosmos3.model.Cosmos3Model)
+
+    def extra_conds(self, **kwargs):
+        out = super().extra_conds(**kwargs)
+        text_input_ids = kwargs.get("text_input_ids", None)
+        if text_input_ids is not None:
+            out["text_input_ids"] = comfy.conds.CONDRegular(text_input_ids)
+        attention_mask = kwargs.get("attention_mask", None)
+        if attention_mask is not None:
+            out["attention_mask"] = comfy.conds.CONDRegular(attention_mask)
+        condition_mask = kwargs.get("condition_mask", None)
+        if condition_mask is not None:
+            out["condition_mask"] = comfy.conds.CONDRegular(condition_mask)
+        out["fps"] = comfy.conds.CONDConstant(kwargs.get("frame_rate", 24.0))
+        return out
+
+    def scale_latent_inpaint(self, sigma, noise, latent_image, **kwargs):
+        return latent_image
 
 class Anima(BaseModel):
     def __init__(self, model_config, model_type=ModelType.FLOW, device=None):
